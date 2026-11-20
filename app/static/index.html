@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>联网知识库 · 接口测试台</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--fg:#1f2328;--muted:#6b7280;--line:#e3e6eb;--accent:#2563eb;--ok:#15803d;--err:#b91c1c;--nested:#fafbfc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+header{padding:18px 24px 8px}
+h1{margin:0 0 4px;font-size:19px}
+.sub{color:var(--muted);font-size:12.5px}
+.sub code{background:#eef1f5;padding:1px 6px;border-radius:4px}
+.tabs{display:flex;gap:6px;padding:10px 24px 0;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--muted);padding:7px 14px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;border-bottom:none}
+.tabs button.active{background:var(--card);color:var(--accent);font-weight:600;box-shadow:0 -2px 0 var(--accent) inset}
+main{padding:0 24px 40px}
+.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:18px}
+.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+label.f{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+label.f b{color:var(--err);font-weight:500}
+input[type=text],input[type=number],select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;font:inherit;background:#fff;color:var(--fg)}
+input:focus,textarea:focus{outline:2px solid #dbe7ff;border-color:var(--accent)}
+textarea{min-height:120px;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+.row{margin-bottom:12px}
+.opts{display:flex;flex-wrap:wrap;gap:10px 18px;padding:10px 12px;background:var(--nested);border:1px dashed var(--line);border-radius:8px}
+.opts label{font-size:12.5px;display:flex;align-items:center;gap:5px}
+.actions{display:flex;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+button.act{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:13px}
+button.act.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+button.act:disabled{opacity:.45;cursor:not-allowed}
+button.mini{padding:4px 10px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--accent)}
+button.mini.danger{color:var(--err);border-color:#f3c9c9}
+.out{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;font-weight:600}
+.badge.ok{background:#e7f6ec;color:var(--ok)}
+.badge.err{background:#fdeaea;color:var(--err)}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:12px 0}
+.kv{background:var(--nested);border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:12.5px;overflow:hidden}
+.kv span{display:block;color:var(--muted);font-size:11.5px}
+.kv b{font-weight:600;word-break:break-all}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{background:#eef3ff;color:#1d4ed8;font-size:11.5px;padding:2px 9px;border-radius:20px}
+.chip.tag{background:#f2f4f7;color:#475467}
+pre.text{background:#0f172a;color:#d6e2f0;padding:12px 14px;border-radius:8px;overflow:auto;font-size:12px;line-height:1.65;max-height:340px;white-space:pre-wrap;word-break:break-word}
+pre.json{background:#f8fafc;color:#0f172a;border:1px solid var(--line);padding:10px 12px;border-radius:8px;overflow:auto;font-size:12px;max-height:320px;white-space:pre-wrap;word-break:break-word}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+.chunks{display:grid;gap:8px;margin-top:10px}
+.chunk{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.chunk-h{display:flex;justify-content:space-between;gap:10px;background:var(--nested);padding:5px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.chunk pre{margin:0;padding:9px 11px;font-size:12.3px;white-space:pre-wrap;word-break:break-word}
+.hit{border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:8px}
+.hit-h{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.bar{height:5px;background:#eef1f5;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:12.8px;margin-top:10px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500;font-size:12px;background:var(--nested)}
+td.ops{text-align:right;white-space:nowrap}
+.hint{color:var(--muted);font-size:12px;margin:6px 0}
+.empty{color:var(--muted);font-size:12.8px;padding:10px 0}
+h3.sec{font-size:13.5px;margin:14px 0 8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>联网知识库 · 接口测试台</h1>
+  <div class="sub">API Base: <code id="apiBase"></code> <span id="health">· 检测中…</span></div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-panel="p-web">① 网页正文提取</button>
+  <button data-panel="p-ingest">② 切片入库</button>
+  <button data-panel="p-search">③ 片段检索</button>
+  <button data-panel="p-docs">④ 文档管理</button>
+</nav>
+
+<main>
+  <!-- ① 网页正文提取 -->
+  <section id="p-web" class="panel active">
+    <div class="row">
+      <label class="f">请求方式</label>
+      <div class="opts" style="border-style:solid">
+        <label><input type="radio" name="webMode" value="url" checked /> 按 URL 抓取 &nbsp;<code>POST /web_text/url_text</code></label>
+        <label><input type="radio" name="webMode" value="html" /> 按 HTML 提取 &nbsp;<code>POST /web_text/html_text</code></label>
+      </div>
+    </div>
+    <div class="row" id="webUrlRow">
+      <label class="f">url <b>*</b>（HttpUrl）</label>
+      <input type="text" id="webUrl" value="https://example.com" placeholder="https://..." />
+    </div>
+    <div class="row" id="webHtmlRow" style="display:none">
+      <label class="f">html <b>*</b>（min_length = 1）</label>
+      <textarea id="webHtml" style="min-height:150px" placeholder="粘贴一段 HTML 源码"></textarea>
+    </div>
+    <div class="row" id="webUrlOptRow" style="display:none">
+      <label class="f">url（可选，仅用于补全 source 等元数据）</label>
+      <input type="text" id="webHtmlUrl" placeholder="https://..." />
+    </div>
+    <div class="row">
+      <label class="f">options（不勾选则不传，沿用 trafilatura 默认值）</label>
+      <div class="opts" id="webOpts">
+        <label><input type="checkbox" data-key="include_comments" /> include_comments</label>
+        <label><input type="checkbox" data-key="include_tables" /> include_tables</label>
+        <label><input type="checkbox" data-key="include_images" /> include_images</label>
+        <label><input type="checkbox" data-key="include_links" /> include_links</label>
+        <label><input type="checkbox" data-key="favor_precision" /> favor_precision</label>
+        <label><input type="checkbox" data-key="favor_recall" /> favor_recall</label>
+        <label><input type="checkbox" data-key="deduplicate" /> deduplicate</label>
+        <label>target_language <input type="text" id="webLang" style="width:64px;padding:2px 6px" placeholder="zh" /></label>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="act" id="webRun">提取正文</button>
+      <button class="act ghost" id="toIngest" disabled>填入「切片入库」</button>
+    </div>
+    <div class="out" id="webResult"><div class="empty">尚未发起请求</div></div>
+  </section>
+
+  <!-- ② 切片入库 -->
+  <section id="p-ingest" class="panel">
+    <div class="row">
+      <label class="f">text <b>*</b>（min_length = 1，长正文；空行分段）</label>
+      <textarea id="ingText" style="min-height:170px">第一段：FastAPI 是一个现代的 Python Web 框架，基于 Starlette 与 Pydantic 构建，天然支持 OpenAPI 文档。
+
+第二段：llama_index 负责把长正文按语义段落切成片段，每个片段单独保存文本与向量。
+
+第三段：检索时先按片段召回，再聚合回整篇文档，这样引用才能定位到具体是哪一条、哪一段。
+
+第四段：如果把整篇压成一个向量，就会丢掉「相关的是第几条」这一信息，上下文选取与引用都不够准确。</textarea>
+    </div>
+    <div class="grid">
+      <div><label class="f">title（可选）</label><input type="text" id="ingTitle" placeholder="文档标题" /></div>
+      <div><label class="f">doc_id（可选，不传自动 uuid4）</label><input type="text" id="ingDocId" placeholder="demo-001" /></div>
+      <div><label class="f">chunk_size（64 ~ 4096，字符）</label><input type="number" id="ingChunk" min="64" max="4096" placeholder="默认 512" /></div>
+      <div><label class="f">chunk_overlap（0 ~ 1024，字符）</label><input type="number" id="ingOverlap" min="0" max="1024" placeholder="默认 64" /></div>
+    </div>
+    <div class="actions"><button class="act" id="ingRun">切片入库</button></div>
+    <div class="out" id="ingResult"><div class="empty">尚未发起请求</div></div>
+  </section>
+
+  <!-- ③ 片段检索 -->
+  <section id="p-search" class="panel">
+    <div class="row">
+      <label class="f">query <b>*</b>（min_length = 1）</label>
+      <input type="text" id="qQuery" value="切片为什么比整篇更准" placeholder="自然语言问题" />
+    </div>
+    <div class="grid">
+      <div><label class="f">top_k（1 ~ 50）</label><input type="number" id="qTop" min="1" max="50" value="5" /></div>
+      <div><label class="f">doc_ids（可选，逗号分隔）</label><input type="text" id="qDocs" placeholder="demo-001, demo-002" /></div>
+      <div>
+        <label class="f">mode</label>
+        <select id="qMode">
+          <option value="vector">vector（纯向量）</option>
+          <option value="hybrid">hybrid（向量 + BM25）</option>
+        </select>
+      </div>
+      <div>
+        <label class="f">alpha（向量权重 0 ~ 1）</label>
+        <input type="number" id="qAlpha" min="0" max="1" step="0.1" value="0.7" />
+      </div>
+      <div>
+        <label class="f">include_text</label>
+        <div class="opts" style="border:none;padding:4px 0;background:transparent">
+          <label><input type="checkbox" id="qText" checked /> 返回片段文本</label>
+        </div>
+      </div>
+      <div>
+        <label class="f">rerank</label>
+        <div class="opts" style="border:none;padding:4px 0;background:transparent">
+          <label><input type="checkbox" id="qRerank" /> 精排（cross-encoder）</label>
+        </div>
+      </div>
+    </div>
+    <div class="actions"><button class="act" id="qRun">检索</button></div>
+    <div class="out" id="qResult"><div class="empty">尚未发起请求</div></div>
+  </section>
+
+  <!-- ④ 文档管理 -->
+  <section id="p-docs" class="panel">
+    <div class="actions"><button class="act ghost" id="docRefresh">刷新文档列表</button></div>
+    <div id="docList"><div class="empty">点击刷新加载已入库文档</div></div>
+    <div class="out" id="docResult" style="display:none"></div>
+  </section>
+</main>
+
+<script>
+const API = location.origin + '/api/v1';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s === null || s === undefined ? '' : s)
+  .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+$('apiBase').textContent = API;
+let lastExtract = null;
+
+/* ---------- 通用请求 ---------- */
+async function call(path, { method = 'POST', body } = {}) {
+  const init = { method, headers: {} };
+  if (body !== undefined) {
+    init.headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(body);
+  }
+  const t0 = performance.now();
+  try {
+    const r = await fetch(API + path, init);
+    const txt = await r.text();
+    let data = txt;
+    try { data = txt ? JSON.parse(txt) : null; } catch (_) { /* 保留原始文本 */ }
+    return { ok: r.ok, status: r.status, data, ms: Math.round(performance.now() - t0), body };
+  } catch (e) {
+    return { ok: false, status: 0, data: '网络错误：' + e, ms: Math.round(performance.now() - t0), body };
+  }
+}
+
+const badge = (r) => `<span class="badge ${r.ok ? 'ok' : 'err'}">${r.status || 'ERR'} · ${r.ms}ms</span>`;
+const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v === null || v === undefined || v === '' ? '—' : esc(v)}</b></div>`;
+const sentBlock = (r) => r.body === undefined ? '' :
+  `<details><summary>实际发送的请求体</summary><pre class="json">${esc(JSON.stringify(r.body, null, 2))}</pre></details>`;
+const rawBlock = (r) => `<details><summary>原始响应 JSON</summary><pre class="json">${
+  esc(typeof r.data === 'string' ? r.data : JSON.stringify(r.data, null, 2))}</pre></details>`;
+
+async function run(btn, fn) {
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '请求中…';
+  try { await fn(); } finally { btn.disabled = false; btn.textContent = old; }
+}
+
+/* ---------- ① 网页正文提取 ---------- */
+function webMode() { return document.querySelector('input[name=webMode]:checked').value; }
+
+function syncWebMode() {
+  const isHtml = webMode() === 'html';
+  $('webUrlRow').style.display = isHtml ? 'none' : '';
+  $('webHtmlRow').style.display = isHtml ? '' : 'none';
+  $('webUrlOptRow').style.display = isHtml ? '' : 'none';
+}
+document.querySelectorAll('input[name=webMode]').forEach((r) => r.addEventListener('change', syncWebMode));
+
+function collectOptions() {
+  const o = {};
+  document.querySelectorAll('#webOpts input[type=checkbox]').forEach((cb) => {
+    if (cb.checked) o[cb.dataset.key] = true;
+  });
+  const lang = $('webLang').value.trim();
+  if (lang) o.target_language = lang;
+  return o;
+}
+
+$('webRun').onclick = () => run($('webRun'), async () => {
+  const options = collectOptions();
+  let body, path;
+  if (webMode() === 'url') {
+    const url = $('webUrl').value.trim();
+    if (!url) { alert('请填写 url'); return; }
+    body = { url, options };
+    path = '/web_text/url_text';
+  } else {
+    const html = $('webHtml').value;
+    if (!html.trim()) { alert('请粘贴 html'); return; }
+    body = { html, options };
+    const u = $('webHtmlUrl').value.trim();
+    if (u) body.url = u;
+    path = '/web_text/html_text';
+  }
+  const res = await call(path, { body });
+  renderExtract(res, path);
+});
+
+function renderExtract(res, path) {
+  const box = $('webResult');
+  if (!res.ok) {
+    const tip = res.status === 422 ? '未能从页面提取出正文，或参数不合法'
+      : res.status === 502 ? '目标站点下载失败（网络 / 反爬 / 超时）'
+      : '请求失败，详见下方响应';
+    box.innerHTML = badge(res) + `<p class="hint">${esc(tip)}</p>` + sentBlock(res) + rawBlock(res);
+    return;
+  }
+  const d = res.data;
+  lastExtract = d;
+  $('toIngest').disabled = false;
+  box.innerHTML = badge(res) + `<p class="hint">${esc(path)}</p>` +
+    `<div class="meta">
+      ${kv('title', d.title)}${kv('author', d.author)}${kv('date', d.date)}${kv('sitename', d.sitename)}
+      ${kv('language', d.language)}${kv('char_count', d.char_count)}${kv('paragraph_count', d.paragraph_count)}${kv('url', d.url)}
+    </div>` +
+    (d.description ? `<div class="kv" style="margin-bottom:10px"><span>description</span><b>${esc(d.description)}</b></div>` : '') +
+    `<div class="chips">${(d.categories || []).map((x) => `<span class="chip">${esc(x)}</span>`).join('')}${
+      (d.tags || []).map((x) => `<span class="chip tag">#${esc(x)}</span>`).join('')}</div>` +
+    `<pre class="text">${esc(d.text)}</pre>` + sentBlock(res) + rawBlock(res);
+}
+
+$('toIngest').onclick = () => {
+  if (!lastExtract) return;
+  $('ingText').value = lastExtract.text || '';
+  $('ingTitle').value = lastExtract.title || '';
+  $('ingDocId').value = 'web-' + Date.now();
+  document.querySelector('.tabs button[data-panel=p-ingest]').click();
+  $('ingText').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+/* ---------- ② 切片入库 ---------- */
+$('ingRun').onclick = () => run($('ingRun'), async () => {
+  const text = $('ingText').value;
+  if (!text.trim()) { alert('text 不能为空'); return; }
+  const body = { text };
+  const t = $('ingTitle').value.trim(); if (t) body.title = t;
+  const id = $('ingDocId').value.trim(); if (id) body.doc_id = id;
+  const cs = $('ingChunk').value; if (cs !== '') body.chunk_size = Number(cs);
+  const co = $('ingOverlap').value; if (co !== '') body.chunk_overlap = Number(co);
+  const res = await call('/knowledge/documents', { body });
+  renderIngest(res);
+});
+
+function renderIngest(res) {
+  const box = $('ingResult');
+  if (!res.ok) {
+    const tip = res.status === 409 ? 'doc_id 已存在，请换一个'
+      : res.status === 422 ? '字段校验未通过（text 为空、chunk_size < 64 等）'
+      : '请求失败，详见下方响应';
+    box.innerHTML = badge(res) + `<p class="hint">${esc(tip)}</p>` + sentBlock(res) + rawBlock(res);
+    return;
+  }
+  const d = res.data;
+  box.innerHTML = badge(res) +
+    `<div class="meta">${kv('doc_id', d.doc_id)}${kv('title', d.title)}${kv('chunk_count', d.chunk_count)}</div>` +
+    `<p class="hint">每个分片单独保存文本与向量；入库响应中的 vector 固定为 null。</p>` +
+    `<div class="chunks">${d.chunks.map((c) => `<div class="chunk">
+        <div class="chunk-h"><span>chunk_index = ${c.chunk_index}</span><code>${esc(c.chunk_id)}</code></div>
+        <pre>${esc(c.text)}</pre></div>`).join('')}</div>` +
+    sentBlock(res) + rawBlock(res);
+  $('qDocs').value = d.doc_id;
+}
+
+/* ---------- ③ 片段检索 ---------- */
+$('qRun').onclick = () => run($('qRun'), async () => {
+  const q = $('qQuery').value.trim();
+  if (!q) { alert('query 不能为空'); return; }
+  const body = {
+    query: q,
+    top_k: Number($('qTop').value || 5),
+    include_text: $('qText').checked,
+    mode: $('qMode').value,
+    alpha: Number($('qAlpha').value || 0),
+    rerank: $('qRerank').checked,
+  };
+  const ids = $('qDocs').value.split(/[,，\s]+/).filter(Boolean);
+  if (ids.length) body.doc_ids = ids;
+  const res = await call('/knowledge/search', { body });
+  renderSearch(res);
+});
+
+function renderSearch(res) {
+  const box = $('qResult');
+  if (!res.ok) { box.innerHTML = badge(res) + sentBlock(res) + rawBlock(res); return; }
+  const d = res.data;
+  // 融合分在 0~1，rerank 的 cross-encoder 分可能为负，统一按区间归一化画条
+  const scores = d.hits.map((h) => h.score);
+  const lo = Math.min(...scores, 0);
+  const span = (Math.max(...scores, 1e-6) - lo) || 1;
+  const hits = d.hits.map((h) => `<div class="hit">
+      <div class="hit-h"><span>${esc(h.doc_id)} · chunk #${h.chunk_index}</span><b>${h.score.toFixed(4)}</b></div>
+      <div class="bar"><i style="width:${Math.max(4, ((h.score - lo) / span) * 100)}%"></i></div>
+      <pre>${esc(h.text || '')}</pre></div>`).join('') || '<div class="empty">没有召回结果</div>';
+  const docs = d.documents.map((a) => `<div class="chunk" style="margin-top:10px">
+      <div class="chunk-h"><span>${esc(a.title || '—')} · ${esc(a.doc_id)}</span>
+      <span>best ${a.best_score.toFixed(4)} · 命中 ${a.hit_count}/${a.chunk_count}</span></div>
+      <pre>${esc(a.full_text)}</pre></div>`).join('') || '<div class="empty">没有文档聚合</div>';
+  box.innerHTML = badge(res) +
+    `<p class="hint">query = ${esc(d.query)} · top_k = ${d.top_k} · mode = ${esc(d.mode)} · alpha = ${d.alpha} · rerank = ${d.rerank}</p>` +
+    `<h3 class="sec">片段级召回 hits（${d.hits.length}）</h3>${hits}` +
+    `<h3 class="sec">按文档聚合 documents（${d.documents.length}）</h3>${docs}` +
+    sentBlock(res) + rawBlock(res);
+}
+
+/* ---------- ④ 文档管理 ---------- */
+$('docRefresh').onclick = () => run($('docRefresh'), loadDocs);
+
+async function loadDocs() {
+  const res = await call('/knowledge/documents', { method: 'GET' });
+  const box = $('docList');
+  if (!res.ok) { box.innerHTML = badge(res) + rawBlock(res); return; }
+  if (!res.data.length) { box.innerHTML = badge(res) + '<div class="empty">暂无文档</div>'; return; }
+  box.innerHTML = badge(res) +
+    `<table><thead><tr><th>doc_id</th><th>title</th><th>分片</th><th>字符</th><th></th></tr></thead><tbody>${
+      res.data.map((d) => `<tr><td><code>${esc(d.doc_id)}</code></td><td>${esc(d.title || '—')}</td>
+        <td>${d.chunk_count}</td><td>${d.char_count}</td>
+        <td class="ops">
+          <button class="mini" data-act="detail" data-id="${esc(d.doc_id)}">详情</button>
+          <button class="mini" data-act="vec" data-id="${esc(d.doc_id)}">含向量</button>
+          <button class="mini danger" data-act="del" data-id="${esc(d.doc_id)}">删除</button>
+        </td></tr>`).join('')}</tbody></table>`;
+  box.querySelectorAll('button[data-act]').forEach((b) => {
+    b.onclick = () => docOp(b.dataset.act, b.dataset.id);
+  });
+}
+
+async function docOp(act, id) {
+  const box = $('docResult');
+  box.style.display = '';
+  if (act === 'del') {
+    if (!confirm(`确认删除 ${id}？该文档及其全部分片会被移除。`)) return;
+    const r = await call(`/knowledge/documents/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    box.innerHTML = badge(r) + sentBlock(r) + rawBlock(r);
+    await loadDocs();
+    return;
+  }
+  const res = await call(`/knowledge/documents/${encodeURIComponent(id)}?include_vectors=${act === 'vec'}`, { method: 'GET' });
+  if (!res.ok) { box.innerHTML = badge(res) + rawBlock(res); return; }
+  const d = res.data;
+  box.innerHTML = badge(res) +
+    `<div class="meta">${kv('doc_id', d.doc_id)}${kv('title', d.title)}${kv('chunk_count', d.chunk_count)}${kv('full_text 长度', d.full_text.length)}</div>` +
+    `<div class="chunks">${d.chunks.map((c) => `<div class="chunk">
+        <div class="chunk-h"><span>#${c.chunk_index}</span><code>${esc(c.chunk_id)}</code></div>
+        <pre>${esc(c.text)}</pre>${
+          c.vector ? `<pre class="json" style="max-height:110px;margin:0;border:none;border-top:1px solid var(--line);border-radius:0">dim=${c.vector.length} · [${
+            c.vector.slice(0, 6).map((v) => v.toFixed(4)).join(', ')}, …]</pre>` : ''}</div>`).join('')}</div>` +
+    rawBlock(res);
+}
+
+/* ---------- 交互与初始化 ---------- */
+document.querySelectorAll('.tabs button').forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('active', x === b));
+    document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === b.dataset.panel));
+  };
+});
+
+fetch(location.origin + '/health')
+  .then((r) => r.json())
+  .then((d) => { $('health').textContent = '· 服务 ' + (d.status === 'ok' ? '在线' : '异常'); })
+  .catch(() => { $('health').textContent = '· 服务未连接'; });
+</script>
+</body>
+</html>
