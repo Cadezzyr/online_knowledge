@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import threading
+import os
 from pathlib import Path
 from typing import cast
 from uuid import uuid4
@@ -120,10 +121,18 @@ class KnowledgeService:
     def _get_bm25_retriever(
         self, nodes: list[BaseNode], top_k: int
     ) -> BM25Retriever:
-        """复用已建好的 BM25 索引，只在首次或数据变更后重建。"""
+        """复用已建好的 BM25 索引，只在首次或数据变更后重建"""
         # bm25s 要求 k 不超过语料规模，否则检索时报错
         k = max(1, min(top_k, len(nodes)))
+        # 缓存实例可能是语料更少时建的，与当前语料不一致就重建
+        if self._bm25_retriever is not None:
+            indexed = int(self._bm25_retriever.bm25.scores.get("num_docs") or 0)
+            if indexed != len(nodes):
+                self._bm25_retriever = None
         if self._bm25_retriever is None:
+            # if os.path.isdir('D:/Pycharm Projects/联网知识库情况/online_knowledge/data/knowledge/bm25_retriever'):
+            #     self._bm25_retriever = BM25Retriever.from_persist_dir("D:/Pycharm Projects/联网知识库情况/online_knowledge/data/knowledge/bm25_retriever")
+            #     return self._bm25_retriever
             self._bm25_retriever = BM25Retriever.from_defaults(
                 nodes=nodes,
                 similarity_top_k=k,
@@ -134,27 +143,33 @@ class KnowledgeService:
                 token_pattern=r"(?u)[\w]",
             )
         else:
-            self._bm25_retriever.similarity_top_k = k
+            # 构造期只会夹一次，复用缓存时按索引真实规模再兜底
+            indexed = int(self._bm25_retriever.bm25.scores.get("num_docs") or 0)
+            self._bm25_retriever.similarity_top_k = max(1, min(k, indexed or k))
         return self._bm25_retriever
 
     def _make_retriever(self, req: SearchRequest) -> BaseRetriever:
         """纯向量召回，或向量 + BM25 两路融合。"""
+        # 候选池要给 rerank 留素材，先放宽到 top_k 的 4 倍（至少 20）
         candidates = max(req.top_k * 4, 20)
-        vector_retriever = self._index.as_retriever(similarity_top_k=candidates)
         if req.mode != "hybrid":
-            return vector_retriever
+            return self._index.as_retriever(similarity_top_k=candidates)
 
         nodes = self._chunk_nodes()
         if not nodes:  # 空库时 BM25 无法建索引，退化为纯向量
-            return vector_retriever
+            return self._index.as_retriever(similarity_top_k=candidates)
 
-        bm25_retriever = self._get_bm25_retriever(nodes, candidates)
+        # 候选池不能超过语料规模：bm25s 要求 k <= 索引里的文档数
+        candidates = min(candidates, len(nodes))
         return QueryFusionRetriever(
-            [vector_retriever, bm25_retriever],
+            [
+                self._index.as_retriever(similarity_top_k=candidates),
+                self._get_bm25_retriever(nodes, candidates),
+            ],
             # 构造函数会读取 Settings.llm，传个空壳避免要求安装 LLM 包；
             # num_queries=1 时它不会被调用
             llm=MockLLM(),
-            # 保留候选池供后处理（如 rerank）精排，最终截断交给 search()
+            # 融合后保留候选池供后处理（如 rerank）精排，最终截断交给 search()
             similarity_top_k=candidates,
             num_queries=1,  # 不启用 LLM 查询改写
             # RRF 不读取 retriever_weights，要用 alpha 必须选相对分数融合
