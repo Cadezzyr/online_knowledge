@@ -15,6 +15,7 @@ dependencies = [
     "llama-index-core",
     "llama-index-embeddings-huggingface",
     "llama-index-retrievers-bm25",
+    "elasticsearch >= 8.13, < 9",
 ]
 
 [tool.uv.sources]
